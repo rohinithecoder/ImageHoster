@@ -102,12 +102,11 @@ public class ImageRepository {
 
         try {
             transaction.begin();
-            Image image = em.find(Image.class, imageId);
-            em.remove(image);
+            Image image = em.find( Image.class, imageId );
+            em.remove( image );
             transaction.commit();
         } catch (Exception e) {
             transaction.rollback();
         }
     }
-
 }

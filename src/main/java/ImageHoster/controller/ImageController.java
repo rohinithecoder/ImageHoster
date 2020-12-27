@@ -1,8 +1,10 @@
 package ImageHoster.controller;
 
+import ImageHoster.model.Comment;
 import ImageHoster.model.Image;
 import ImageHoster.model.Tag;
 import ImageHoster.model.User;
+import ImageHoster.service.CommentService;
 import ImageHoster.service.ImageService;
 import ImageHoster.service.TagService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.*;
 
 @Controller
@@ -26,6 +29,9 @@ public class ImageController {
 
     @Autowired
     private TagService tagService;
+
+    @Autowired
+    private CommentService commentService;
 
     //This method displays all the images in the user home page after successful login
     @RequestMapping("images")
@@ -48,8 +54,10 @@ public class ImageController {
     @RequestMapping("/images/{id}")
     public String showImage(@PathVariable("id") Integer id, Model model) {
         Image image = imageService.getImage(id);
+
         model.addAttribute("image", image);
         model.addAttribute("tags", image.getTags());
+        model.addAttribute( "comments",  commentService.getComments( image ));
         return "images/image";
     }
 
@@ -102,6 +110,7 @@ public class ImageController {
             model.addAttribute("image", image);
             model.addAttribute("editError", error);
             model.addAttribute("tags", image.getTags());
+            model.addAttribute( "comments", commentService.getComments( image ) );
 
             return "images/image";
         }
@@ -162,6 +171,7 @@ public class ImageController {
             model.addAttribute("image", image);
             model.addAttribute("deleteError", error);
             model.addAttribute("tags", image.getTags());
+            model.addAttribute( "comments", commentService.getComments( image ) );
 
             return "images/image";
         }
@@ -169,8 +179,29 @@ public class ImageController {
         return "redirect:/images";
     }
 
+    @RequestMapping(value = "/image/{id}/{title}/comments", method = RequestMethod.POST)
+    public String addComment(@PathVariable("id") Integer imageId,
+                           @PathVariable("title") String title,
+                           @RequestParam("comment") String comment,
+                           Model model,
+                           HttpSession session) throws IOException {
+        System.out.println("IMage ID updated with comment" + comment);
 
-    //This method converts the image to Base64 format
+        Image image = imageService.getImage(imageId);
+        Comment userComment = new Comment();
+        userComment.setUser((User) session.getAttribute("loggeduser"));
+        userComment.setImage( image );
+        userComment.setText( comment );
+        userComment.setCreatedDate( LocalDate.now() );
+        commentService.addComment( userComment );
+
+        model.addAttribute("image", image);
+        model.addAttribute("tags", image.getTags());
+        model.addAttribute( "comments",  commentService.getComments( image ));
+        return "images/image";
+    }
+
+        //This method converts the image to Base64 format
     private String convertUploadedFileToBase64(MultipartFile file) throws IOException {
         return Base64.getEncoder().encodeToString(file.getBytes());
     }
